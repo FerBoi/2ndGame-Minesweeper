@@ -29,6 +29,10 @@ public class Controller {
         return this.playerBoard.cellRevealed(boardPoint);
     }
 
+    public Point[] discoverAllMines() {
+        return this.playerBoard.allMinesCoords();
+    }
+
     
     
 
