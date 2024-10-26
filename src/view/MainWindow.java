@@ -254,6 +254,8 @@ public class MainWindow extends javax.swing.JFrame {
             for (int j = 0; j < gridDimensions.width; j++) {
                 JButton btn = new JButton();
                 btn.setPreferredSize(new Dimension(30, 30));
+                btn.setBackground(Color.BLACK);
+                btn.setFocusPainted(false);
                 btn.setBorder(cellBorder);
                 this.gridPanel.add(btn);
                 final Point BOX_POINT = new Point(j, i);
