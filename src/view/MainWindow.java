@@ -13,13 +13,18 @@ import static controller.Dificulty.CUSTOM;
 import static controller.Dificulty.EXPERT;
 import static controller.Dificulty.INTERMEDIATE;
 import java.awt.Color;
+import java.awt.Desktop;
 import java.awt.Dimension;
 import java.awt.GridLayout;
 import java.awt.Point;
 import java.io.File;
+import java.io.IOException;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.swing.BorderFactory;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
@@ -42,6 +47,7 @@ public class MainWindow extends javax.swing.JFrame {
     private File[] resources;
     private boolean mineDiscovered;
     private Dificulty currentDificulty;
+    private CustomGrid dialog;
     
     
     /** Creates new form MainWindow */
@@ -49,23 +55,27 @@ public class MainWindow extends javax.swing.JFrame {
         initComponents();
         
         this.CONTROLLER = controller;
-        
+
         try {
             this.resources = new File(this.getClass().getResource("../src").toURI()).listFiles();
         } catch (URISyntaxException ex) {}
+        
+        this.setIconImage(new ImageIcon(this.getClass().getResource("../src/icon.png")).getImage());
         
         this.createNewGrid(Dificulty.BEGINNER);
         this.createCrono();
         
         for (int i = 0; i < this.gameOption.getItemCount(); i++) {
             JMenuItem menuItem = this.gameOption.getItem(i);
-            
+
             if (menuItem != null) {
                 menuItem.addActionListener(e -> {
                     Dificulty dificulty = null;
 
                     switch (menuItem.getText()) {
-                        case "New", "Beginner" ->
+                        case "New" ->
+                            dificulty = this.currentDificulty != null ? this.currentDificulty : Dificulty.BEGINNER;
+                        case "Beginner" ->
                             dificulty = Dificulty.BEGINNER;
                         case "Intermediate" ->
                             dificulty = Dificulty.INTERMEDIATE;
@@ -73,17 +83,17 @@ public class MainWindow extends javax.swing.JFrame {
                             dificulty = Dificulty.EXPERT;
                         case "Custom..." ->
                             dificulty = Dificulty.CUSTOM;
+
                     }
-                    
+
                     if (dificulty != Dificulty.CUSTOM) {
                         this.timer.cancel();
                         this.createCrono();
                     }
-                    
+
                     createNewGrid(dificulty);
                 });
             }
-            
         }
     }
 
@@ -110,8 +120,10 @@ public class MainWindow extends javax.swing.JFrame {
         expertOption = new javax.swing.JMenuItem();
         customOption = new javax.swing.JMenuItem();
         helpOption = new javax.swing.JMenu();
+        howPlay = new javax.swing.JMenuItem();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        setTitle("Minesweeper");
         setResizable(false);
 
         upPanel.setBorder(javax.swing.BorderFactory.createBevelBorder(javax.swing.border.BevelBorder.RAISED));
@@ -122,6 +134,7 @@ public class MainWindow extends javax.swing.JFrame {
 
         inputFace.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         inputFace.setToolTipText("Reset Game");
+        inputFace.setBorder(javax.swing.BorderFactory.createBevelBorder(javax.swing.border.BevelBorder.RAISED));
         inputFace.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseReleased(java.awt.event.MouseEvent evt) {
                 inputFaceMouseReleased(evt);
@@ -158,6 +171,15 @@ public class MainWindow extends javax.swing.JFrame {
         menuBar.add(gameOption);
 
         helpOption.setText("Help");
+
+        howPlay.setText("How To Play");
+        howPlay.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                howPlayActionPerformed(evt);
+            }
+        });
+        helpOption.add(howPlay);
+
         menuBar.add(helpOption);
 
         setJMenuBar(menuBar);
@@ -173,6 +195,15 @@ public class MainWindow extends javax.swing.JFrame {
             this.createCrono();
         }
     }//GEN-LAST:event_inputFaceMouseReleased
+
+    private void howPlayActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_howPlayActionPerformed
+        try {
+            URI uri = new URI("https://minesweepergame.com/strategy/how-to-play-minesweeper.php");
+            Desktop.getDesktop().browse(uri);
+        } catch (IOException | URISyntaxException ex) {
+            Logger.getLogger(MainWindow.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }//GEN-LAST:event_howPlayActionPerformed
 
     private void createNewGrid(Dificulty gameDificulty) {
         Dimension gridDimensions = new Dimension();
@@ -195,17 +226,18 @@ public class MainWindow extends javax.swing.JFrame {
             gridDimensions = Config.GRID_DIMENSIONS[index];
             minesNumber = Config.MINES_NUMBER[index];
         } else {
-            CustomGrid customGrid = new CustomGrid(this, true);
-            customGrid.setVisible(true);
+            if(this.dialog == null)
+                this.dialog = new CustomGrid(this, true);
             
-            gridDimensions = customGrid.getGridDimensions();
+            this.dialog.setVisible(true);
+            gridDimensions = this.dialog.getGridDimensions();
             
             if(gridDimensions == null)
                 return;
             
             this.timer.cancel();
             this.createCrono();
-            minesNumber = customGrid.getMinesNumber();
+            minesNumber = this.dialog.getMinesNumber();
         }
         
         GridLayout viewBoard = new GridLayout(gridDimensions.height, gridDimensions.width);
@@ -284,6 +316,15 @@ public class MainWindow extends javax.swing.JFrame {
                         this.timer.cancel();
                         this.inputFace.setIcon(new ImageIcon(this.getClass().getResource("../src/dead.png")));
                         this.mineDiscovered = true;
+                        Point[] coords = this.CONTROLLER.discoverAllMines();
+                        
+                        GridLayout panelLayout = (GridLayout) this.gridPanel.getLayout();
+                        
+                        for (Point coord : coords) {
+                            JButton mineBtn = (JButton) this.gridPanel.getComponent(coord.y * panelLayout.getColumns() + coord.x);
+                            mineBtn.setBackground(Color.WHITE);
+                            mineBtn.setIcon(new ImageIcon(this.getClass().getResource("../src/bomb.png")));
+                        }
                     }
                 }
             } else {
@@ -316,6 +357,7 @@ public class MainWindow extends javax.swing.JFrame {
     private javax.swing.JMenuItem expertOption;
     private javax.swing.JMenu gameOption;
     private javax.swing.JMenu helpOption;
+    private javax.swing.JMenuItem howPlay;
     private javax.swing.JLabel inputFace;
     private javax.swing.JLabel inputMines;
     private javax.swing.JLabel inputTime;
