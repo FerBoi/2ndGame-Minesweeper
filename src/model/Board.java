@@ -19,10 +19,13 @@ import java.util.Random;
 public class Board {
     private final Cell[][] BOARD;
     public int boxesToWin;
+    private final int MINES_NUMBER;
     
     public Board(Dimension boardDimensions, int minesNumber) {
         this.BOARD = new Cell[boardDimensions.height][boardDimensions.width];
         this.boxesToWin = boardDimensions.width * boardDimensions.height - minesNumber;
+        this.MINES_NUMBER = minesNumber;
+        System.out.println(this.MINES_NUMBER);
         
         // -- INICIALIZE CELLS
         
@@ -32,6 +35,8 @@ public class Board {
         }
         
         // -- SET MINES --
+        
+        int minesBoard = 0;
         
         for (int i = 0; i < minesNumber; i++) {
             Random r = new Random();
@@ -56,9 +61,12 @@ public class Board {
                 if (this.BOARD[j][k].getNumber() != -1) {
                     ArrayList<Integer> adyacentNumbers = this.lookAdyacents(new Point(k, j));
                     this.BOARD[j][k].setNumber(Collections.frequency(adyacentNumbers, -1));
-                }
+                } else
+                    minesBoard++;
             }
         }        
+        
+        System.out.println("Minas puestas - " + minesBoard);
     }
 
     private ArrayList<Integer> lookAdyacents(Point boardPoint) {
@@ -82,6 +90,25 @@ public class Board {
     public boolean cellRevealed(Point boardPoint) {
         this.BOARD[boardPoint.y][boardPoint.x].setDiscovered(true);
         return --this.boxesToWin == 0;
+    }
+    
+    public Point[] allMinesCoords() {
+        Point[] coords = new Point[this.MINES_NUMBER];
+        int minesCollected = 0;
+        int coordsIndex = 0;
+        
+        for (int i = 0; i < this.BOARD.length; i++) {
+            for (int j = 0; j < this.BOARD[i].length; j++) {
+                if(this.BOARD[i][j].getNumber() == -1) {
+                    coords[coordsIndex++] = new Point(j, i);
+                    
+                    if(++minesCollected == this.MINES_NUMBER)
+                        break;
+                }
+            }
+        }
+        
+        return coords;
     }
 
     @Override
