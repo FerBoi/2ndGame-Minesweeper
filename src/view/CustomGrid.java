@@ -6,7 +6,9 @@
 package view;
 
 import java.awt.Dimension;
-import javax.swing.JOptionPane;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import javax.swing.JTextField;
 
 /**
  *
@@ -20,6 +22,14 @@ public class CustomGrid extends javax.swing.JDialog {
     public CustomGrid(java.awt.Frame parent, boolean modal) {
         super(parent, modal);
         initComponents();
+        
+        this.addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+                gridDimensions = null;
+            }
+            
+        });
     }
 
     /** This method is called from within the constructor to
@@ -40,20 +50,20 @@ public class CustomGrid extends javax.swing.JDialog {
         okBtn = new javax.swing.JButton();
         cancelBtn = new javax.swing.JButton();
 
-        setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
         setResizable(false);
 
         height.setText("Height:");
 
         width.setText("Width:");
 
-        inputHeight.setText("16");
+        inputHeight.setText("9");
+        inputHeight.setPreferredSize(new java.awt.Dimension(75, 22));
 
-        inputWidth.setText("16");
+        inputWidth.setText("9");
 
         mines.setText("Mines:");
 
-        inputMines.setText("40");
+        inputMines.setText("60");
 
         okBtn.setText("OK");
         okBtn.addActionListener(new java.awt.event.ActionListener() {
@@ -81,10 +91,10 @@ public class CustomGrid extends javax.swing.JDialog {
                     .addComponent(mines))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 24, Short.MAX_VALUE)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                    .addComponent(inputHeight, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(inputWidth)
-                    .addComponent(inputHeight)
                     .addComponent(inputMines))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 42, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 31, Short.MAX_VALUE)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                     .addComponent(cancelBtn, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(okBtn, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
@@ -118,26 +128,44 @@ public class CustomGrid extends javax.swing.JDialog {
     }// </editor-fold>//GEN-END:initComponents
 
     private void cancelBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cancelBtnActionPerformed
-        this.dispose();
+        this.gridDimensions = null;
+        this.setVisible(false);
     }//GEN-LAST:event_cancelBtnActionPerformed
 
     private void okBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_okBtnActionPerformed
-        try {
-            int height = Integer.parseInt(this.inputHeight.getText());
-            int width = Integer.parseInt(this.inputWidth.getText());
-            int minesNumber = Integer.parseInt(this.inputMines.getText());
+        JTextField[] fields = {this.inputHeight, this.inputWidth, this.inputMines};
+        int[] values = new int[fields.length];
+        
+        for (int i = 0; i < fields.length; i++) {
+            try {
+                if (fields[i].getText().isBlank())
+                    throw new NumberFormatException();
+
+                values[i] = Integer.parseInt(fields[i].getText());
+                
+                if((i != fields.length-1 && (values[i] < 9 || values[i] > 30)) || (i == fields.length-1 && (values[i] < values[0] * values[1] * 20 / 100 || 
+                        values[i] > values[0] * values[1] * 80 / 100)))
+                    throw new IllegalArgumentException();
+                
+            } catch (NumberFormatException e) {
+                values[i] = i == fields.length -1 ? values[0] * values[1] * 50 / 100 : 9; // mine field default value 10, width or height 9
+            } catch (IllegalArgumentException e) { // mines field default value 50% of the dimension, width or height 9 or 30
+                if(i != fields.length - 1) {
+                    if(values[i] < 9)
+                        values[i] = 9;
+                    else if(values[i] > 30)
+                        values[i] = 30;
+                } else
+                    values[i] = values[0] * values[1] * 50 / 100;
+            }
             
-            if(height < 5 || width < 5 || (minesNumber > 5 && minesNumber < height * width / 80))
-                throw new NumberFormatException();
-            
-            this.gridDimensions = new Dimension(width, height);
-            this.minesNumber = minesNumber;
-            this.dispose();
-        } catch (NumberFormatException e) {
-            JOptionPane.showConfirmDialog(this, "Only numbers are allowed. The minimum height, width,"
-                    + " and number of mines must be greater than 4. Additionally, the number of mines must be less than 80% of the grid's dimensions.", 
-                    "ERROR", JOptionPane.DEFAULT_OPTION, JOptionPane.ERROR_MESSAGE);
+            fields[i].setText(values[i] + "");
         }
+       
+        
+        this.gridDimensions = new Dimension(values[0], values[1]);
+        this.minesNumber = values[2];
+        this.setVisible(false);
     }//GEN-LAST:event_okBtnActionPerformed
 
     public Dimension getGridDimensions() {
